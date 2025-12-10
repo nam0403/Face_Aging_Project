@@ -31,7 +31,6 @@ def get_aligned_face(image_path=None, rgb_pil_image=None):
         print('Face detection Failed due to error.')
         print(e)
         face = None
-
     return face
 
 

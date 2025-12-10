@@ -328,7 +328,7 @@ class Backbone(Module):
         norm = torch.norm(x, 2, 1, True)
         output = torch.div(x, norm)
 
-        return output, norm
+        return output, norm, x
 
 
 
