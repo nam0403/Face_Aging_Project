@@ -63,7 +63,7 @@ def _save_response_content(response, destination):
 
 # 1. Thay thế ID này bằng ID file thực tế trên Google Drive của bạn
 # Ví dụ link: drive.google.com/file/d/1A2B3C.../view -> ID là 1A2B3C...
-GDRIVE_FILE_ID = 'YOUR_GDRIVE_FILE_ID_HERE' 
+GDRIVE_FILE_ID = '1FH81gkKbsLG1EOVn1WjoyfQlJVCpm8p3' 
 
 # 2. Tên file model sẽ lưu trên máy
 MODEL_FILENAME = "ir_se_101_temporal_best.pth"
