@@ -132,36 +132,23 @@ def load_system_model():
     model.eval()
     return model
 
-# ------------------------
-# 2. XỬ LÝ ẢNH THEO CODE CỦA BẠN
-# ------------------------
-
 def extract_style_adaface(model, pil_img):
     """
     Hàm này mô phỏng lại logic:
     np_img -> BGR convert -> Normalize thủ công -> Tensor -> Model -> Normalize Feature
     """
     try:
-        # 1. Đảm bảo Input là PIL RGB
         if pil_img.mode != "RGB":
             pil_img = pil_img.convert("RGB")
-        
-        # 2. Convert sang Numpy
-        # Lưu ý: PIL mặc định là RGB.
         np_img = np.array(pil_img) 
         
-        # 3. Preprocessing (Logic cũ của bạn)
-        # ::-1 để đảo chiều kênh màu từ RGB sang BGR (quan trọng với model InsightFace/AdaFace)
         bgr_img = ((np_img[:, :, ::-1] / 255.) - 0.5) / 0.5
-        
-        # 4. Tạo Tensor: (H, W, C) -> (C, H, W)
         tensor = torch.tensor(
             bgr_img.transpose(2, 0, 1)
         ).float().unsqueeze(0).to(DEVICE)
 
         # 5. Forward Pass
         with torch.no_grad():
-            # Model AdaFace thường trả về (feature, norm) hoặc chỉ feature
             out = model(tensor)
             
             if isinstance(out, (tuple, list)):
@@ -169,13 +156,9 @@ def extract_style_adaface(model, pil_img):
             else:
                 feature = out
             
-            # Lấy Norm gốc để check chất lượng ảnh (Optional)
             norm_val = torch.norm(feature, p=2, dim=1).item()
-
-            # 6. Normalize Feature (Quan trọng)
             feature = F.normalize(feature, dim=1)
-            
-            # 7. Convert sang Numpy
+
             return feature.cpu().numpy()[0], norm_val
 
     except Exception as e:
@@ -183,12 +166,8 @@ def extract_style_adaface(model, pil_img):
         return None, 0.0
 
 def compute_cosine(a, b):
-    # Dùng Numpy dot product cho an toàn
     return float(np.dot(a, b))
 
-# ------------------------
-# 3. Giao diện Streamlit
-# ------------------------
 st.title("🔍 AdaFace Verification")
 model = load_system_model()
 
