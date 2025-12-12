@@ -83,11 +83,8 @@ if not os.path.exists(MODEL_FILENAME):
 else:
     print(f"✅ Found model file: {MODEL_FILENAME}")
 
-# ==========================================
-# GLOBAL VARIABLES (Use these in your main code)
-# ==========================================
-MODEL_CHECKPOINT_PATH = MODEL_FILENAME
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+# Trong app.py
+from model_loader import MODEL_CHECKPOINT_PATH, DEVICE
 
 print(f"🚀 Device set to: {DEVICE}")
 
