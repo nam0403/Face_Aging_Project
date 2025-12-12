@@ -15,7 +15,7 @@ except ImportError:
 # ==========================================
 # 👇 Dán ID file Google Drive của file .pth vào dòng dưới 👇
 # Ví dụ link: drive.google.com/file/d/1A2B3C.../view -> ID là 1A2B3C...
-GDRIVE_FILE_ID = 'ID_FILE_MODEL_CUA_BAN_O_DAY' 
+GDRIVE_FILE_ID = '1FH81gkKbsLG1EOVn1WjoyfQlJVCpm8p3' 
 
 MODEL_FILENAME = "ir_se_101_temporal_best.pth"
 
