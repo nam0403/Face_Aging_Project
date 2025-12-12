@@ -4,15 +4,92 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import os
-import sys
-
 import align
 
 # =========================================================
 # CẤU HÌNH
 # =========================================================
-MODEL_CHECKPOINT_PATH = "weights/adaface.ckpt" 
+import os
+import torch
+import requests
+import sys
+
+def download_from_gdrive(id, destination):
+    """
+    Tải file từ Google Drive (hỗ trợ file kích thước lớn)
+    """
+    URL = "https://docs.google.com/uc?export=download"
+
+    session = requests.Session()
+
+    response = session.get(URL, params={'id': id}, stream=True)
+    token = _get_confirm_token(response)
+
+    if token:
+        params = {'id': id, 'confirm': token}
+        response = session.get(URL, params=params, stream=True)
+
+    _save_response_content(response, destination)
+
+def _get_confirm_token(response):
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            return value
+    return None
+
+def _save_response_content(response, destination):
+    CHUNK_SIZE = 32768
+    
+    # Lấy tổng kích thước file (nếu có) để hiển thị progress (đơn giản)
+    total_length = response.headers.get('content-length')
+    
+    print(f"⬇️ Downloading to {destination}...")
+    
+    with open(destination, "wb") as f:
+        downloaded = 0
+        for chunk in response.iter_content(CHUNK_SIZE):
+            if chunk: 
+                f.write(chunk)
+                downloaded += len(chunk)
+                # Hiển thị dấu chấm để báo hiệu đang tải
+                if total_length:
+                    # Logic hiển thị % có thể thêm ở đây
+                    pass
+    print("\n✅ Download complete!")
+
+# ==========================================
+# CONFIGURATION
+# ==========================================
+
+# 1. Thay thế ID này bằng ID file thực tế trên Google Drive của bạn
+# Ví dụ link: drive.google.com/file/d/1A2B3C.../view -> ID là 1A2B3C...
+GDRIVE_FILE_ID = 'YOUR_GDRIVE_FILE_ID_HERE' 
+
+# 2. Tên file model sẽ lưu trên máy
+MODEL_FILENAME = "ir_se_101_temporal_best.pth"
+
+# 3. Kiểm tra và tải file
+if not os.path.exists(MODEL_FILENAME):
+    print(f"⚠️ Model file '{MODEL_FILENAME}' not found locally.")
+    
+    if GDRIVE_FILE_ID == 'YOUR_GDRIVE_FILE_ID_HERE':
+        print("❌ Error: Please update 'GDRIVE_FILE_ID' in model_loader.py with your real Google Drive File ID.")
+        sys.exit(1)
+    try:
+        download_from_gdrive(GDRIVE_FILE_ID, MODEL_FILENAME)
+    except Exception as e:
+        print(f"❌ Failed to download model: {e}")
+        sys.exit(1)
+else:
+    print(f"✅ Found model file: {MODEL_FILENAME}")
+
+# ==========================================
+# GLOBAL VARIABLES (Use these in your main code)
+# ==========================================
+MODEL_CHECKPOINT_PATH = MODEL_FILENAME
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+print(f"🚀 Device set to: {DEVICE}")
 
 # Import net.py
 try:
@@ -28,30 +105,32 @@ st.set_page_config(page_title="AdaFace Demo", layout="centered")
 # ------------------------
 @st.cache_resource
 def load_system_model():
-    if not os.path.exists(MODEL_CHECKPOINT_PATH):
-        st.error(f"⚠️ Không tìm thấy file: `{MODEL_CHECKPOINT_PATH}`")
-        return None
+    model = net.build_model("ir_101").to(DEVICE)
 
-    try:
-        st.info(f"Loading model: `{MODEL_CHECKPOINT_PATH}` on `{DEVICE}`...")
+    device = torch.device(DEVICE)
+    
+    if os.path.exists(MODEL_CHECKPOINT_PATH):
+        print(f"📥 Loading model from {MODEL_CHECKPOINT_PATH}")
+        checkpoint = torch.load(MODEL_CHECKPOINT_PATH, map_location=device, weights_only=False)
         
-        # Build Model Architecture
-        model = net.build_model()
-        
-        # Load Weights
-        checkpoint = torch.load(MODEL_CHECKPOINT_PATH, map_location=DEVICE)
-        state_dict = checkpoint['state_dict'] if isinstance(checkpoint, dict) and 'state_dict' in checkpoint else checkpoint
-        
-        # Fix DataParallel keys
-        new_state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
-        
-        model.load_state_dict(new_state_dict, strict=False)
-        model.to(DEVICE)
-        model.eval()
-        return model
-    except Exception as e:
-        st.error(f"Lỗi load model: {e}")
+        if 'model_state_dict' in checkpoint:
+            model.load_state_dict(checkpoint['model_state_dict'])
+        elif 'state_dict' in checkpoint:
+            # Handle pretrained format
+            new_state = {
+                k[6:]: v for k, v in checkpoint['state_dict'].items() 
+                if k.startswith('model.')
+            }
+            model.load_state_dict(new_state, strict=False)
+        else:
+            model.load_state_dict(checkpoint)
+    else:
+        print(f"⚠️  Model path not found: {MODEL_CHECKPOINT_PATH}")
         return None
+    
+    model.to(device)
+    model.eval()
+    return model
 
 # ------------------------
 # 2. XỬ LÝ ẢNH THEO CODE CỦA BẠN
