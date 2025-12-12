@@ -6,5 +6,5 @@ requests>=2.26.0
 Pillow>=8.4.0
 matplotlib>=3.4.0
 mtcnn-pytorch>=0.1.0
-opencv-python
 scikit-learn>=0.24.0
+opencv-python-headless>=4.8.0
